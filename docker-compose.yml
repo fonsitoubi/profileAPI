@@ -20,17 +20,14 @@ services:
     ports:
       - 3000:8080
     environment:
-      - URL=http://localhost:8080/openapi
+      - URL=http://localhost:8090/openapi
     depends_on:
       - crm_db
 
   api-gradle:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: api-gradle
+    image: miscaandrei/apigradle:0.2
     ports:
-      - 8080:8080
+      - 8090:8080
     environment:
       - DB=crm_db
     links:
