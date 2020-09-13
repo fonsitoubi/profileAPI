@@ -1,0 +1,18 @@
+node{
+    stage('Deploy') {
+           openshift.withCluster() {
+                openshift.withProject("project-futurama-prod") {
+                    openshift.selector("dc", "profileAPI-prod").rollout().latest()
+                    def latestDeploymentVersion = openshift.selector('dc',"profileAPI-prod").object().status.latestVersion
+                    def rc = openshift.selector('rc', "profileAPI-prod-${latestDeploymentVersion}")
+                    timeout (time: 10, unit: 'MINUTES') {
+                        rc.untilEach(1){
+                            def rcMap = it.object()
+                            return (rcMap.status.replicas.equals(rcMap.status.readyReplicas))
+                        }
+                    }
+                }
+             echo "Deploy Finished"
+         }
+    }
+}

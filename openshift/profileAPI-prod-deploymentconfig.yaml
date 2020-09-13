@@ -1,0 +1,91 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: profileAPI
+    application: profile
+    zone: production
+  name: profileAPI-prod
+  namespace: project-futurama-prod
+spec:
+  selector:
+    deploymentconfig: profileAPI-prod
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  minReplicas: 1 
+  maxReplicas: 10
+  metrics: 
+  - type: Resource
+    resource:
+      name: cpu 
+      target:
+        type: Utilization 
+        averageValue: 7500Mi
+  template:
+    metadata:
+      labels:
+        application: profileApi
+        deploymentconfig: profileAPI-prod
+        zone: production
+      name: profileApi
+    spec:
+      containers:
+        - env:
+            - name: DOMAIN
+              value: 'https://www.test.com'
+            - name: PORT
+              value: '8080'
+            - name: SERVER
+              value: production
+            - name: LOCALS
+              value: 'en,fr'
+            - name: DATABASE_URL
+              value: 'http://mariadb-service'
+            - name: DATABASE_USER
+              value: xxxxxxxxxxxxx
+            - name: DATABASE_PASSWORD
+              value: xxxxxxxxxxx
+          image: >-
+            registry.hub.docker.com/miscaandrei/apigradle:latest
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: profileAPI-prod
+          resources:
+            limits:
+              cpu: 512m
+              memory: 1Gi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  test: false
+  triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+          - profileAPI-prod
+        from:
+          kind: ImageStreamTag
+          name: 'profileApi:production'
+          namespace: project-futurama-prod
+      type: ImageChange
